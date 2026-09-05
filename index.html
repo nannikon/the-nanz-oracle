@@ -11,18 +11,22 @@ html,body{margin:0;min-height:100%;background:#050606;color:#e8e1d8;font-family:
 body{min-height:100svh;display:grid;place-items:center;overflow-x:hidden}
 .app{width:min(100%,620px);min-height:100svh;padding:clamp(28px,7vh,70px) 20px 26px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .prompt{font-family:Arial,sans-serif;font-size:10px;letter-spacing:.38em;text-transform:uppercase;opacity:.55;margin:0 0 24px}
-.stage{position:relative;width:min(68vw,285px);aspect-ratio:941/1672;perspective:1400px;cursor:pointer;outline:none}
-.card{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .85s cubic-bezier(.2,.75,.2,1),filter .4s}
+.stage{position:relative;width:min(68vw,285px);aspect-ratio:941/1672;cursor:pointer;outline:none}
+.card{position:absolute;inset:0;transition:transform .38s cubic-bezier(.2,.75,.2,1),filter .35s}
 .stage:hover .card{filter:brightness(1.06)}
-.stage.revealed .card{transform:rotateY(180deg)}
-.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;overflow:hidden;box-shadow:0 22px 60px #000b}
+.stage.revealing .card{transform:scale(.965)}
+.face{position:absolute;inset:0;border-radius:14px;overflow:hidden;box-shadow:0 22px 60px #000b;transition:opacity .32s ease,transform .38s cubic-bezier(.2,.75,.2,1)}
+.back{opacity:1;transform:scale(1)}
+.front{opacity:0;transform:scale(.985);pointer-events:none}
+.stage.revealed .back{opacity:0;transform:scale(.985)}
+.stage.revealed .front{opacity:1;transform:scale(1)}
 .back{border:1px solid #2b2927;background:radial-gradient(circle at 50% 45%,#151516,#080909 62%,#030404);display:grid;place-items:center}
 .back:before{content:"";position:absolute;inset:8%;border:1px solid #574c44;border-radius:10px;box-shadow:inset 0 0 28px #000}
 .sigil{width:44%;aspect-ratio:1;opacity:.75;position:relative}
 .sigil:before,.sigil:after{content:"";position:absolute;inset:0;border:1px solid #8e7667;border-radius:50%}
 .sigil:after{transform:rotate(45deg);border-radius:0}
 .spark{position:absolute;left:50%;top:50%;width:13px;height:13px;transform:translate(-50%,-50%) rotate(45deg);border:1px solid #d6b3a4;box-shadow:0 0 18px #c98783}
-.front{transform:rotateY(180deg);background:#090a0a}
+.front{background:#090a0a}
 .front img{width:100%;height:100%;object-fit:cover;display:block;background:#050606}
 .actions{height:55px;margin-top:22px;display:flex;align-items:center;justify-content:center}
 .again{appearance:none;border:0;border-bottom:1px solid #71675f;background:none;color:#d8d0c7;padding:8px 2px;font:11px Arial,sans-serif;letter-spacing:.22em;text-transform:uppercase;opacity:0;pointer-events:none;transition:opacity .35s}
@@ -59,18 +63,35 @@ function pick(){
   let n;
   do{n=randomIndex()}while(n===last);
   last=n;
+  stage.classList.add('revealing');
+  img.onload=()=>{
+    requestAnimationFrame(()=>{
+      stage.classList.add('revealed');
+      stage.classList.remove('revealing');
+      actions.classList.add('show');
+      prompt.textContent='Your card.';
+      busy=false;
+    });
+  };
   img.src=cards[n];
   img.alt=`The Nanz Oracle card ${n+1}`;
-  const reveal=()=>{stage.classList.add('revealed');actions.classList.add('show');prompt.textContent='Your card.';busy=false};
-  if(img.complete) reveal(); else img.onload=reveal;
+  if(img.complete) img.onload();
 }
 function reset(e){
   e?.stopPropagation();
   if(busy)return;
+  busy=true;
+  stage.classList.add('revealing');
   stage.classList.remove('revealed');
   actions.classList.remove('show');
   prompt.textContent='Pick one.';
-  setTimeout(()=>{img.removeAttribute('src');img.alt=''},850);
+  setTimeout(()=>{
+    img.onload=null;
+    img.removeAttribute('src');
+    img.alt='';
+    stage.classList.remove('revealing');
+    busy=false;
+  },380);
 }
 stage.addEventListener('click',pick);
 stage.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick()}});
